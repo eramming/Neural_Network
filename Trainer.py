@@ -45,26 +45,3 @@ class Trainer:
         for layer in self.nn.p_layers:
             for p in layer.perceptrons:
                 p.apply_update()
-
-    # def back_propagation(self, outputs: np.ndarray) -> np.ndarray:
-    #     error: float = self.target - outputs[-1]
-    #     for level in range(len(self.nn.p_layers) - 1, -1, -1):
-    #         self.update(level, error)
-        
-    #     self.nn.update()
-    #     raise NotImplementedError()
-    
-    # def update(self, level: int, error: float) -> Tuple[np.ndarray, np.ndarray]:
-    #     final_layer_indx: int = len(self.nn.p_layers) - 1
-    #     if level == final_layer_indx:
-    #         for p in self.nn.p_layers[level]:
-    #             p.store_update(self.eta, error)
-    #     elif level == final_layer_indx - 1:
-    #         raise NotImplementedError("The current implementation can only handle NNs with up to one layer.")
-    #     elif level < final_layer_indx - 1:
-    #         raise NotImplementedError("The current implementation can only handle NNs with up to two layers.")
-
-    # def ffbp(self, inputs: np.ndarray) -> np.ndarray:
-    #     outputs = self.nn.feed_forward(inputs)
-    #     self.back_propagation(outputs)
-    #     return outputs[-1]

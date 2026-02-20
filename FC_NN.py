@@ -1,7 +1,5 @@
 from typing import Callable, List
 import numpy as np
-# from functools import reduce
-# import operator
 from Perceptron import Perceptron
 from Perceptron import InputNode
 
@@ -16,12 +14,8 @@ class FC_NN:
 
     def __init__(self, layers: List[Layer], inputs: List[InputNode],
                  eta: float = 1.0) -> None:
-        # if len(layers) > 2:
-        #     raise ValueError("The current implementation can only handle NNs with up to 2 layers.")
         self.inputs: List[InputNode] = inputs
         self.p_layers: List[Layer] = layers
-        # self.weight_cnt: int = reduce(operator.add, [len(p.w_vec) for layer in self.p_layers for p in layer.perceptrons], 0)
-        # self.perceptron_cnt: int = reduce(operator.add, [1 for layer in self.p_layers for p in layer.perceptrons], 0)
 
     def predict(self) -> List[float]:
         return [p.get_output() for p in self.p_layers[-1].perceptrons]
