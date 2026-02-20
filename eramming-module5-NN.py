@@ -40,9 +40,16 @@ class TestCase:
 
 def main() -> None:
     tc = TestCase("2-1")
-    epochs: int = 50
-    eta: float = 1.0
+    epochs: int = 5
+    eta: float = 5.0
+
+    # Overrides for Class Assignment:
+    tc.nn = FC_NN.from_config(2, [[[0.24, 0.88, 0]]], Activation.sigmoid)
+    tc.inputs = [0.8, 0.9]
+    tc.targets = np.array([0.95])
+
     trainer = Trainer(tc.nn, epochs, eta)
+
 
     print(f"Inputs: {tc.inputs}\tTargets: {tc.targets}")
     trainer.train(tc.inputs, tc.targets)
