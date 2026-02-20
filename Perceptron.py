@@ -1,0 +1,87 @@
+from typing import Callable, List, override, Tuple
+import numpy as np
+from abc import ABC, abstractmethod
+
+
+class Node(ABC):
+
+    @abstractmethod
+    def get_output(self) -> float:
+        pass
+
+    @abstractmethod
+    def set_output(self) -> None:
+        pass
+
+
+class InputNode(Node):
+
+    def __init__(self, constant: float = 0):
+        self.constant = constant
+
+    @override
+    def get_output(self) -> float:
+        return self.constant
+    
+    @override
+    def set_output(self, constant: float) -> None:
+        self.constant = constant
+
+
+class Perceptron(Node):
+
+    def __init__(self, init_weights: np.ndarray, init_bias: float,
+                 f_act: Callable[[float], float], inputs: List[Node],
+                 consumers: List['Perceptron'], loc: Tuple[int, int]) -> None:
+        super().__init__()
+        self.name: str = f"P_{loc[0]}_{loc[1]}"
+        self.loc: Tuple[int, int] = loc
+        self.f_activation: Callable[[float], float] = f_act
+        self.w_vec: np.ndarray = init_weights
+        self.bias: float = init_bias
+        self.inputs: List[Node] = inputs
+        self.consumers: List[Perceptron] = consumers
+
+        self.output: float = None
+        self.new_weights_extended: np.ndarray = None
+        self.delta: float = None
+
+
+    def calculate_activity(self) -> float:
+        inputs: np.ndarray = np.array([node.get_output() for node in self.inputs])
+        return np.dot(np.append(self.w_vec, self.bias), np.append(inputs, 1))
+    
+    def calculate_output(self) -> float:
+        return self.f_activation(self.calculate_activity())
+    
+    def store_update(self, eta: float, target: float, terminal: bool) -> None:
+        if terminal:
+            e: float = target - self.output
+            self.delta = e * (1 - self.output) * self.output
+        else:
+            self.delta = self.sum_downstream_weighted_deltas() * (1 - self.output) * self.output
+
+        b_delta: float = eta * np.array([self.delta])
+        ins = [p.get_output() for p in self.inputs]
+        self.new_weights_extended =  np.append(b_delta * np.array(ins), b_delta)
+
+
+    def sum_downstream_weighted_deltas(self) -> float:
+        sum: float = 0
+        for c in self.consumers:
+            sum += c.delta * c.w_vec[self.loc[1]]
+        return sum
+        
+        
+    def apply_update(self) -> None:
+        self.w_vec = self.new_weights_extended[:-1]
+        self.bias = float(self.new_weights_extended[-1])
+        self.new_weights_extended = None
+
+    @override
+    def set_output(self) -> None:
+        self.output = self.calculate_output()
+    
+    @override
+    def get_output(self) -> float:
+        return self.output
