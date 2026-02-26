@@ -35,8 +35,8 @@ class FC_NN:
         for i, layer in enumerate(config):
             perceptrons: List[Perceptron] = []
             for j, p_weights in enumerate(layer):
-                perceptrons.append(Perceptron(np.array(p_weights[:-1]),
-                                              p_weights[-1], f_act, (i, j)))
+                perceptrons.append(Perceptron(np.array(p_weights),
+                                              f_act, (i, j)))
             layers.append(Layer(perceptrons))
         return layers
     

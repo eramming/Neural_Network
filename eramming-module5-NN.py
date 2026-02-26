@@ -19,7 +19,7 @@ class TestCase:
     def _create_nn(self) -> FC_NN:
         config = []
         for i in range(1, len(self.arch)):
-            layer = [[random.random() for _ in range(self.arch[i-1] + 1)] for _ in range(self.arch[i])]
+            layer = [[random.random() for _ in range(self.arch[i-1])] for _ in range(self.arch[i])]
             config.append(layer)
         print(f"Config: {config}")
         return FC_NN.from_config(self.arch[0], config, Activation.sigmoid)
@@ -39,13 +39,13 @@ class TestCase:
 
 
 def main() -> None:
-    tc = TestCase("2-1")
-    epochs: int = 5
-    eta: float = 5.0
+    tc = TestCase("2-2-1")
+    epochs: int = 2
+    eta: float = 0.1
 
     # Overrides for Class Assignment:
-    tc.nn = FC_NN.from_config(2, [[[0.24, 0.88, 0]]], Activation.sigmoid)
-    tc.inputs = [0.8, 0.9]
+    tc.nn = FC_NN.from_config(2, [[[0.8, 0.1],[0.5, 0.2]],[[0.2, 0.7]]], Activation.sigmoid)
+    tc.inputs = [1, 3]
     tc.targets = np.array([0.95])
 
     trainer = Trainer(tc.nn, epochs, eta)

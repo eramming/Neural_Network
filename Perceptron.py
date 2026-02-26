@@ -30,25 +30,24 @@ class InputNode(Node):
 
 class Perceptron(Node):
 
-    def __init__(self, init_weights: np.ndarray, init_bias: float,
+    def __init__(self, init_weights: np.ndarray,
                  f_act: Callable[[float], float], loc: Tuple[int, int]) -> None:
         super().__init__()
         self.name: str = f"P_{loc[0]}_{loc[1]}"
         self.loc: Tuple[int, int] = loc
         self.f_activation: Callable[[float], float] = f_act
         self.w_vec: np.ndarray = init_weights
-        self.bias: float = init_bias
         self.producers: List[Node] = []
         self.consumers: List[Perceptron] = []
 
         self.output: float = None
-        self.new_weights_extended: np.ndarray = None
+        self.new_weights: np.ndarray = None
         self.delta: float = None
 
 
     def calculate_activity(self) -> float:
         inputs: np.ndarray = np.array([node.get_output() for node in self.producers])
-        return np.dot(np.append(self.w_vec, self.bias), np.append(inputs, 1))
+        return np.dot(self.w_vec, inputs)
     
     def calculate_output(self) -> float:
         return self.f_activation(self.calculate_activity())
@@ -60,10 +59,9 @@ class Perceptron(Node):
         else:
             self.delta = self.sum_downstream_weighted_deltas() * (1 - self.output) * self.output
 
-        b_delta: float = eta * np.array([self.delta])
         ins = [p.get_output() for p in self.producers]
-        delta_extended = np.append(b_delta * np.array(ins), b_delta)
-        self.new_weights_extended = delta_extended + np.append(self.w_vec, self.bias)
+        delta = eta * np.array([self.delta]) * np.array(ins)
+        self.new_weights = delta + self.w_vec
 
 
     def sum_downstream_weighted_deltas(self) -> float:
@@ -74,14 +72,13 @@ class Perceptron(Node):
         
         
     def apply_update(self) -> None:
-        self.w_vec = self.new_weights_extended[:-1]
-        self.bias = float(self.new_weights_extended[-1])
-        self.new_weights_extended = None
+        self.w_vec = self.new_weights
+        self.new_weights = None
 
     @override
     def set_output(self) -> None:
         self.output = self.calculate_output()
-        print(f"Weights: {self.w_vec}\tBias: {self.bias:.6f}\tOutput: {self.output:.6f}")
+        print(f"Weights: {self.w_vec}\tOutput: {self.output:.6f}")
     
     @override
     def get_output(self) -> float:
