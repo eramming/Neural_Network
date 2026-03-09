@@ -67,15 +67,30 @@ def main(argv: List[str]) -> None:
         eta = args.eta
     if args.debug:
         getLogger("nn").setLevel(DEBUG)
-    trainer = Trainer(nn, epochs, eta, inputs, targets)
 
-
+    LOG.info("------------Single Alternating---------------")
+    trainer = Trainer(nn, 15, eta, inputs, targets)
     LOG.info(f"Inputs: {inputs}\tTargets: {targets}")
     trainer.train_alternate()
-    # trainer.train_delayed_alternate(switch_after=15)
     for input, target in zip(inputs, targets):
         outputs: List[float] = nn.feed_forward(input)
-        LOG.info(f"\tDesired Value: {target}\tPredicted Value(s): {outputs}")
+        e = np.array([target[0] - outputs[0]])
+        E = 0.5 * np.sum(np.square(e))
+        weights_ext = nn.get_weights()
+        LOG.info(f"\tDesired Value: {target}\tPredicted Value(s): {outputs}\tE:{E}")
+    LOG.info(f"\tFinal Weights: {weights_ext}")
+
+    LOG.info("------------Delayed Alternating---------------")
+    nn: FC_NN = FC_NNBuilder("2-2-1").build_from_config(len(inputs[0]), config, Activation.sigmoid)
+    trainer = Trainer(nn, epochs, eta, inputs, targets)
+    trainer.train_delayed_alternate(switch_after=15)
+    for input, target in zip(inputs, targets):
+        outputs: List[float] = nn.feed_forward(input)
+        e = np.array([target[0] - outputs[0]])
+        E = 0.5 * np.sum(np.square(e))
+        weights_ext = nn.get_weights()
+        LOG.info(f"\tDesired Value: {target}\tPredicted Value(s): {outputs}\tE:{E}")
+    LOG.info(f"\tFinal Weights: {weights_ext}")
 
 
 if __name__ == "__main__":

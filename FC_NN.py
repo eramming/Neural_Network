@@ -1,5 +1,6 @@
 from typing import List
 from Perceptron import Perceptron, InputNode
+import numpy as np
 
 
 class Layer:
@@ -26,3 +27,13 @@ class FC_NN:
         if layer_indx == len(self.p_layers) - 1:
             return [p.get_output() for p in self.p_layers[layer_indx].perceptrons]
         return self.ff_helper(layer_indx + 1)
+    
+    def get_weights(self) -> List[List[List[float]]]:
+        weights_by_layer = []
+        for layer in self.p_layers:
+            weights_by_perceptron = []
+            for p in layer.perceptrons:
+                weights_by_perceptron.append(np.append(p.w_vec, p.bias).tolist())
+                
+            weights_by_layer.append(weights_by_perceptron)
+        return weights_by_layer
