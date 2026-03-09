@@ -1,22 +1,42 @@
 from typing import List
 import numpy as np
 from FC_NN import FC_NN
+from logging import getLogger, Logger
+
+LOG: Logger = getLogger(f"nn.{__name__}")
 
 
 class Trainer:
 
-    def __init__(self, nn: FC_NN, epochs: int, eta: float) -> None:
+    def __init__(self, nn: FC_NN, epochs: int, eta: float,
+                 inputs: List[List[float]], targets: List[np.ndarray]) -> None:
         self.epochs: int = epochs
         self.eta: float = eta
         self.nn: FC_NN = nn
+        if len(inputs) != len(targets):
+            raise ValueError("You must have an equivalent number of input sets and output sets.")
+        self.inputs: List[List[float]] = inputs
+        self.targets: List[np.ndarray] = targets
     
-    def train(self, inputs: List[float], targets: np.ndarray) -> None:
+    def train_delayed_alternate(self, switch_after: int) -> None:
         for epoch in range(1, self.epochs + 1):
-            self.ffbp(inputs, targets)
-            e = np.array([targets[i] - p.output for i, p in enumerate(self.nn.p_layers[-1].perceptrons)])
-            E = 0.5 * np.sum(np.square(e))
-            print(f"Epoch {epoch}\tE:{E:.6f}\tResult:{[round(val, 6) for val in self.nn.predict()]}")
+            for io_pair_id, (input, target) in enumerate(zip(self.inputs, self.targets), 1):
+                for run_id in range(switch_after):
+                    self.ffbp(input, target)
+                    e = np.array([target[i] - p.output for i, p in enumerate(self.nn.p_layers[-1].perceptrons)])
+                    E = 0.5 * np.sum(np.square(e))
+                    LOG.info(f"\tEpoch {epoch}\tRun {run_id} for I/O pair {io_pair_id}\tE:{E:.6f}"
+                          f"\tResult:{[round(val, 6) for val in self.nn.feed_forward(input)]}")
 
+
+    def train_alternate(self) -> None:
+        for epoch in range(1, self.epochs + 1):
+            for io_pair_id, (input, target) in enumerate(zip(self.inputs, self.targets)):
+                self.ffbp(input, target)
+                e = np.array([target[i] - p.output for i, p in enumerate(self.nn.p_layers[-1].perceptrons)])
+                E = 0.5 * np.sum(np.square(e))
+                LOG.info(f"\tEpoch {epoch}\tI/O pair {io_pair_id}\tE:{E:.6f}"
+                      f"\tResult:{[round(val, 6) for val in self.nn.feed_forward(input)]}")
 
     # Breadth First Traversal to compute Feed Forward Back Propagation algorithm!
     def ffbp(self, inputs: List[float], targets: np.ndarray) -> None:
