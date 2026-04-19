@@ -50,7 +50,7 @@ def main(argv: List[str]) -> None:
     # inputs = [tc.input_set]
     # targets = [tc.target_set]
 
-    # Overrides for Class Assignment:
+    # Specific Config according to Class Assignment:
     inputs = [[1, 1], [-1, -1]]
     targets = [np.array([0.9]), np.array([0.05])]
     config = [
