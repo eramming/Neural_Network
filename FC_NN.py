@@ -1,7 +1,6 @@
-from typing import Callable, List
+from typing import List
+from Perceptron import Perceptron, InputNode
 import numpy as np
-from Perceptron import Perceptron
-from Perceptron import InputNode
 
 
 class Layer:
@@ -12,42 +11,29 @@ class Layer:
 
 class FC_NN:
 
-    def __init__(self, layers: List[Layer], inputs: List[InputNode],
-                 eta: float = 1.0) -> None:
+    def __init__(self, layers: List[Layer], inputs: List[InputNode]) -> None:
         self.inputs: List[InputNode] = inputs
         self.p_layers: List[Layer] = layers
 
-    def predict(self) -> List[float]:
-        return [p.get_output() for p in self.p_layers[-1].perceptrons]
+    # Breadth First Traversal to compute just Feed Forward outputs. No updating weights!
+    def feed_forward(self, inputs: List[float]) -> List[float]:
+        for i, n in zip(inputs, self.inputs):
+            n.set_output(i)
+        return self.ff_helper(0)
 
-    @staticmethod
-    def from_config(input_size: int, config: List[List[List[float]]],
-                    f_act: Callable[[float], float]) -> 'FC_NN':
-        layers: List[Layer] = FC_NN.create_perceptron_layers(config, f_act)
-        inputs: List[InputNode] = [InputNode() for _ in range(input_size)]
-        FC_NN.add_bidirectional_connections(layers, inputs)
-        return FC_NN(layers, inputs)
+    def ff_helper(self, layer_indx: int) -> List[float]:
+        for p in self.p_layers[layer_indx].perceptrons:
+            p.set_output()
+        if layer_indx == len(self.p_layers) - 1:
+            return [p.get_output() for p in self.p_layers[layer_indx].perceptrons]
+        return self.ff_helper(layer_indx + 1)
     
-    @staticmethod
-    def create_perceptron_layers(config: List[List[List[float]]],
-                                 f_act: Callable[[float], float]) -> List[Layer]:
-        layers: List[Layer] = []
-        for i, layer in enumerate(config):
-            perceptrons: List[Perceptron] = []
-            for j, p_weights in enumerate(layer):
-                perceptrons.append(Perceptron(np.array(p_weights[:-1]),
-                                              p_weights[-1], f_act, (i, j)))
-            layers.append(Layer(perceptrons))
-        return layers
-    
-    @staticmethod
-    def add_bidirectional_connections(layers: List[Layer], inputs: List[InputNode]) -> None:
-        consuming_layer: List[Perceptron] = layers[-1].perceptrons
-        for producing_layer in [layer.perceptrons for layer in reversed(layers[:-1])]:
-            for p in consuming_layer:
-                p.set_producers(producing_layer)
-            for p in producing_layer:
-                p.set_consumers(consuming_layer)
-            consuming_layer = producing_layer
-        for p in layers[0].perceptrons:
-            p.set_producers(inputs)
+    def get_weights(self) -> List[List[List[float]]]:
+        weights_by_layer = []
+        for layer in self.p_layers:
+            weights_by_perceptron = []
+            for p in layer.perceptrons:
+                weights_by_perceptron.append(np.append(p.w_vec, p.bias).tolist())
+                
+            weights_by_layer.append(weights_by_perceptron)
+        return weights_by_layer

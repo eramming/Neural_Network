@@ -4,25 +4,24 @@ from Trainer import Trainer
 from typing import List
 import numpy as np
 import random
+from FC_NNBuilder import FC_NNBuilder
+from argparse import ArgumentParser, Namespace
+from logging import getLogger, Logger, DEBUG, INFO, basicConfig
+import sys
 
 random.seed(777)
-
+basicConfig(
+    level=INFO
+)
+LOG: Logger = getLogger(f"nn.{__name__}")
 
 class TestCase:
 
     def __init__(self, arch_str: str) -> None:
         self.arch: List[int] = list(map(int, arch_str.split("-")))
-        self.inputs: List[float] = self._create_inputs(self.arch[0])
-        self.targets: np.ndarray = self._create_targets(self.arch[-1])
-        self.nn: FC_NN = self._create_nn()
-
-    def _create_nn(self) -> FC_NN:
-        config = []
-        for i in range(1, len(self.arch)):
-            layer = [[random.random() for _ in range(self.arch[i-1] + 1)] for _ in range(self.arch[i])]
-            config.append(layer)
-        print(f"Config: {config}")
-        return FC_NN.from_config(self.arch[0], config, Activation.sigmoid)
+        self.input_set: List[float] = self._create_inputs(self.arch[0])
+        self.target_set: np.ndarray = self._create_targets(self.arch[-1])
+        self.nn: FC_NN = FC_NNBuilder(arch_str).build_random()
 
     def _create_inputs(self, in_size: int) -> List[float]:
         sample = [1.9, 7, -2.2, -8.4, 3.9]
@@ -36,26 +35,63 @@ class TestCase:
             raise ValueError(f"Current terminal count max is {len(sample)}")
         return sample[:terminal_cnt]
 
+def parse_args(argv: List[str]) -> Namespace:
+    parser: ArgumentParser = ArgumentParser(description="Create a Fully Connected Neural Network.")
+    parser.add_argument("--epochs", type=int, required=False, help="Number of epochs to train.")
+    parser.add_argument("--eta", type=float, required=False, help="Training rate.")
+    parser.add_argument("--debug", action="store_true", required=False, help="Show debug statements")
+    return parser.parse_args(argv)
 
 
-def main() -> None:
-    tc = TestCase("2-1")
-    epochs: int = 5
-    eta: float = 5.0
+def main(argv: List[str]) -> None:
+    # Random Test Case for Sanity Testing:
+    # tc = TestCase("2-2-1")
+    # nn: FC_NN = tc.nn
+    # inputs = [tc.input_set]
+    # targets = [tc.target_set]
 
-    # Overrides for Class Assignment:
-    tc.nn = FC_NN.from_config(2, [[[0.24, 0.88, 0]]], Activation.sigmoid)
-    tc.inputs = [0.8, 0.9]
-    tc.targets = np.array([0.95])
+    # Specific Config according to Class Assignment:
+    inputs = [[1, 1], [-1, -1]]
+    targets = [np.array([0.9]), np.array([0.05])]
+    config = [
+        [[0.3, 0.3, 0], [0.3, 0.3, 0]],
+        [[0.8, 0.8, 0]]
+    ]
+    nn: FC_NN = FC_NNBuilder("2-2-1").build_from_config(len(inputs[0]), config, Activation.sigmoid)
+    args: Namespace = parse_args(argv[1:])
+    epochs: int = 15
+    eta: float = 1.0
+    if args.epochs is not None:
+        epochs = args.epochs
+    if args.eta is not None:
+        eta = args.eta
+    if args.debug:
+        getLogger("nn").setLevel(DEBUG)
 
-    trainer = Trainer(tc.nn, epochs, eta)
+    LOG.info("------------Single Alternating---------------")
+    trainer = Trainer(nn, 15, eta, inputs, targets)
+    LOG.info(f"Inputs: {inputs}\tTargets: {targets}")
+    trainer.train_alternate()
+    for input, target in zip(inputs, targets):
+        outputs: List[float] = nn.feed_forward(input)
+        e = np.array([target[0] - outputs[0]])
+        E = 0.5 * np.sum(np.square(e))
+        weights_ext = nn.get_weights()
+        LOG.info(f"\tDesired Value: {target}\tPredicted Value(s): {outputs}\tE:{E}")
+    LOG.info(f"\tFinal Weights: {weights_ext}")
 
-
-    print(f"Inputs: {tc.inputs}\tTargets: {tc.targets}")
-    trainer.train(tc.inputs, tc.targets)
-    prediction: List[float] = tc.nn.predict()
-    print(f"Desired Value: {tc.targets}\tPredicted Value(s): {prediction}")
+    LOG.info("------------Delayed Alternating---------------")
+    nn: FC_NN = FC_NNBuilder("2-2-1").build_from_config(len(inputs[0]), config, Activation.sigmoid)
+    trainer = Trainer(nn, epochs, eta, inputs, targets)
+    trainer.train_delayed_alternate(switch_after=15)
+    for input, target in zip(inputs, targets):
+        outputs: List[float] = nn.feed_forward(input)
+        e = np.array([target[0] - outputs[0]])
+        E = 0.5 * np.sum(np.square(e))
+        weights_ext = nn.get_weights()
+        LOG.info(f"\tDesired Value: {target}\tPredicted Value(s): {outputs}\tE:{E}")
+    LOG.info(f"\tFinal Weights: {weights_ext}")
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

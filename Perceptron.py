@@ -1,6 +1,9 @@
 from typing import Callable, List, override, Tuple
 import numpy as np
 from abc import ABC, abstractmethod
+from logging import getLogger, Logger
+
+LOG: Logger = getLogger(f"nn.{__name__}")
 
 
 class Node(ABC):
@@ -81,7 +84,7 @@ class Perceptron(Node):
     @override
     def set_output(self) -> None:
         self.output = self.calculate_output()
-        print(f"Weights: {self.w_vec}\tBias: {self.bias:.6f}\tOutput: {self.output:.6f}")
+        LOG.debug(f"\tWeights: {self.w_vec}\tBias: {self.bias:.6f}\tOutput: {self.output:.6f}")
     
     @override
     def get_output(self) -> float:
